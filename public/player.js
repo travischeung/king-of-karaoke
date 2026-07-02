@@ -11,18 +11,26 @@ let loadedVideoId = null;
 let advancedFor = null; // guards against double-advancing the same song
 
 // --- QR code + join URL ---
-fetch('/api/info')
-  .then((r) => r.json())
-  .then(({ remoteUrl }) => {
-    document.getElementById('join-url').textContent = remoteUrl;
-    new QRCode(document.getElementById('qrcode'), {
-      text: remoteUrl,
-      width: 180,
-      height: 180,
-      colorDark: '#000',
-      colorLight: '#fff',
-    });
+// Use the origin the player page was actually opened at — so the QR just works whether
+// that's a Cloudflare tunnel, a real host, or a LAN IP. Only exception: if the page was
+// opened at localhost, fall back to the server's LAN IP so a same-Wi-Fi phone can scan it.
+(async () => {
+  let joinUrl = window.location.origin + '/remote';
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(window.location.origin)) {
+    try {
+      const { remoteUrl } = await (await fetch('/api/info')).json();
+      if (remoteUrl) joinUrl = remoteUrl;
+    } catch { /* keep localhost fallback */ }
+  }
+  document.getElementById('join-url').textContent = joinUrl;
+  new QRCode(document.getElementById('qrcode'), {
+    text: joinUrl,
+    width: 180,
+    height: 180,
+    colorDark: '#000',
+    colorLight: '#fff',
   });
+})();
 
 // --- YouTube IFrame API ---
 window.onYouTubeIframeAPIReady = () => {
