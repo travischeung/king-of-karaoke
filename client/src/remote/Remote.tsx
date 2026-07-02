@@ -4,6 +4,8 @@ import { socket } from '../lib/socket';
 import { useAppState } from '../lib/hooks';
 import type { SearchItem } from '../lib/types';
 
+const REACTIONS = ['👏'];
+
 // The phone remote: search / paste, add or "play next", transport controls, and the queue.
 // Never plays video — only sends intents to the server.
 export default function Remote() {
@@ -69,6 +71,7 @@ export default function Remote() {
       videoId: it.videoId, title: it.title, channel: it.channel,
       thumb: it.thumb, addedBy: name || 'Guest', next,
     });
+    setQuery('');   // clear the search field (the effect also clears the results)
     showToast(next ? 'Added — playing next!' : 'Added to queue');
   }
 
@@ -174,6 +177,12 @@ export default function Remote() {
           </li>
         ))}
       </ol>
+
+      <div className="reaction-bar">
+        {REACTIONS.map((e) => (
+          <button key={e} aria-label={`Send ${e}`} onClick={() => socket.emit('reaction', { emoji: e })}>{e}</button>
+        ))}
+      </div>
 
       <div id="toast" className={toast ? 'show' : ''}>{toast}</div>
     </>

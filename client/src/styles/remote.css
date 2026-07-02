@@ -39,7 +39,7 @@ button { font: inherit; cursor: pointer; border: none; border-radius: 10px; colo
 .rm { background: var(--panel); color: var(--muted); }
 
 /* ---------- Remote (phone) ---------- */
-.remote { max-width: 640px; margin: 0 auto; padding: .75rem .75rem 4rem; }
+.remote { max-width: 640px; margin: 0 auto; padding: .75rem .75rem 5.5rem; }
 .remote header {
   position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: .5rem;
   background: var(--bg); padding: .5rem 0; border-bottom: 1px solid #26262f;
@@ -69,6 +69,20 @@ button { font: inherit; cursor: pointer; border: none; border-radius: 10px; colo
 .paste-row { display: flex; gap: .5rem; margin-top: .6rem; }
 .paste-row input { flex: 1; padding: .7rem; border-radius: 10px; border: 1px solid #33333f; background: var(--panel-2); color: var(--text); }
 .paste-row button { padding: .7rem 1.1rem; background: var(--accent); color: #fff; font-weight: 700; }
+
+/* ---------- Emoji reaction bar (fixed bottom) ---------- */
+.reaction-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; gap: .4rem; justify-content: center; overflow-x: auto;
+  padding: .5rem .6rem calc(.5rem + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, transparent, var(--bg) 45%);
+}
+.reaction-bar button {
+  flex: 0 0 auto; width: 3rem; height: 3rem; font-size: 1.6rem;
+  border-radius: 50%; background: var(--panel-2);
+  display: grid; place-items: center; transition: transform .1s;
+}
+.reaction-bar button:active { transform: scale(1.35); background: var(--accent); }
 
 /* ---------- Toast ---------- */
 #toast {

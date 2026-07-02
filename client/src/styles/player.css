@@ -65,8 +65,35 @@ body.player {
 /* Sits above the scene backdrop but behind the TV/panels. Reaction animations
    (emojis floating up, fireworks, etc.) render here in the space around the TV. */
 #reactions {
-  position: fixed; inset: 0; z-index: 0;
+  position: fixed; inset: 0; z-index: 90;   /* in FRONT of the TV, below the power-on overlay */
   pointer-events: none; overflow: hidden;
+}
+.reaction {
+  position: absolute; bottom: -16vh; left: var(--x);
+  width: var(--size); height: var(--size);
+  object-fit: contain; user-select: none;
+  transform: translateX(-50%);
+  animation: reactionFloat var(--dur) ease-in forwards;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,.45));
+}
+@keyframes reactionFloat {
+  0%   { opacity: 0; transform: translate(-50%, 0) scale(.6) rotate(0deg); }
+  10%  { opacity: 1; }
+  100% { opacity: 1; transform: translate(calc(-50% + var(--drift)), -100vh) scale(1) rotate(var(--rot)); }
+}
+
+/* Explosion particles spawned when a clap reaches the top */
+.burst {
+  position: absolute; width: var(--bsize); height: var(--bsize); border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fff, #ffd24a 45%, #ff8a00 82%, transparent);
+  box-shadow: 0 0 10px #ffd24a, 0 0 20px #ffb300;
+  transform: translate(-50%, -50%);
+  animation: burstOut var(--bdur) ease-out forwards;
+  will-change: transform, opacity;
+}
+@keyframes burstOut {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.25); }
 }
 
 /* ---------- Stage layout ---------- */

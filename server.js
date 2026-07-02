@@ -93,6 +93,16 @@ io.on('connection', (socket) => {
     queue.togglePlay(typeof p.playing === 'boolean' ? p.playing : undefined);
     broadcast();
   });
+
+  // Transient emoji reactions — broadcast to all (the player renders them). Light
+  // per-client throttle (~8/sec) so one phone can't flood the animation layer.
+  socket.on('reaction', (p = {}) => {
+    const now = Date.now();
+    if (now - (socket.lastReaction || 0) < 120) return;
+    socket.lastReaction = now;
+    const emoji = String(p.emoji || '').slice(0, 8);
+    if (emoji) io.emit('reaction', { emoji });
+  });
 });
 
 server.listen(PORT, '0.0.0.0', () => {

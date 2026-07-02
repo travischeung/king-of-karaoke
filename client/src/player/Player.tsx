@@ -4,6 +4,7 @@ import Sortable from 'sortablejs';
 import { socket } from '../lib/socket';
 import { useAppState } from '../lib/hooks';
 import { useTheme, THEMES } from './useTheme';
+import clapUrl from '../assets/clap.png';
 
 // The player screen: the only page that plays video. Renders the TV chrome + QR,
 // mirrors the shared queue, and drives playback imperatively via the YouTube API.
@@ -19,6 +20,7 @@ export default function Player() {
   const loadedRef = useRef<string | null>(null);
   const advancedRef = useRef<string | null>(null);
   const queueOlRef = useRef<HTMLOListElement>(null);
+  const reactionsRef = useRef<HTMLDivElement>(null);
 
   const [qr, setQr] = useState<{ url: string; img: string }>({ url: '', img: '' });
   const { theme, selectTheme, uploadBackground, clearBackground } = useTheme();
@@ -137,6 +139,53 @@ export default function Player() {
     return () => s.destroy();
   }, []);
 
+  // --- Emoji reactions: spawn a floating particle per broadcast ---
+  useEffect(() => {
+    const layer = reactionsRef.current;
+    if (!layer) return;
+    // Spawn a radial spray of glowing particles centered at (cx, cy).
+    const spawnBurst = (cx: number, cy: number, base: number) => {
+      const count = 14;
+      const bsize = Math.max(10, Math.round(base * 0.12));
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('span');
+        p.className = 'burst';
+        const ang = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+        const dist = base * (0.5 + Math.random() * 0.6);
+        p.style.left = cx + 'px';
+        p.style.top = cy + 'px';
+        p.style.setProperty('--bsize', bsize + 'px');
+        p.style.setProperty('--dx', Math.round(Math.cos(ang) * dist) + 'px');
+        p.style.setProperty('--dy', Math.round(Math.sin(ang) * dist) + 'px');
+        p.style.setProperty('--bdur', (0.5 + Math.random() * 0.35).toFixed(2) + 's');
+        p.addEventListener('animationend', () => p.remove(), { once: true });
+        layer.appendChild(p);
+      }
+    };
+
+    const onReaction = () => {
+      const el = document.createElement('img');
+      el.className = 'reaction';
+      el.src = clapUrl;
+      el.alt = '';
+      el.style.setProperty('--x', (Math.random() * 88 + 2).toFixed(1) + '%');
+      el.style.setProperty('--size', Math.round(Math.random() * 180 + 240) + 'px');
+      el.style.setProperty('--dur', (Math.random() * 1.07 + 2.27).toFixed(2) + 's');
+      el.style.setProperty('--drift', Math.round(Math.random() * 140 - 70) + 'px');
+      el.style.setProperty('--rot', Math.round(Math.random() * 60 - 30) + 'deg');
+      // On reaching the top, explode into a burst.
+      el.addEventListener('animationend', () => {
+        const r = el.getBoundingClientRect();
+        spawnBurst(r.left + r.width / 2, r.top + r.height / 2, r.width);
+        el.remove();
+      }, { once: true });
+      layer.appendChild(el);
+      while (layer.childElementCount > 150) layer.firstElementChild?.remove();
+    };
+    socket.on('reaction', onReaction);
+    return () => { socket.off('reaction', onReaction); };
+  }, []);
+
   const powerOn = () => {
     startedRef.current = true;
     setStarted(true);
@@ -146,7 +195,7 @@ export default function Player() {
 
   return (
     <>
-      <div id="reactions" aria-hidden="true" />
+      <div id="reactions" aria-hidden="true" ref={reactionsRef} />
 
       <div id="theme-bar">
         <label>
