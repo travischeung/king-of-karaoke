@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🎤 Karaoke Player</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="player">
+  <div id="start-overlay">
+    <div>
+      <button id="start-btn">▶ Start the party</button>
+      <p>Click once to enable sound &amp; autoplay</p>
+    </div>
+  </div>
+
+  <div id="stage">
+    <div id="video-wrap">
+      <div id="player-frame"></div>
+      <div id="idle" class="idle">Queue is empty — scan the QR to add a song 🎶</div>
+    </div>
+
+    <aside id="side">
+      <div id="qr-box">
+        <div id="qrcode"></div>
+        <div class="join">Scan to add songs<br /><span id="join-url"></span></div>
+      </div>
+
+      <div class="controls">
+        <button id="playpause">▶ Play</button>
+        <button id="skip">⏭ Skip</button>
+      </div>
+
+      <h2>Up next</h2>
+      <ol id="queue" class="queue"></ol>
+    </aside>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script src="/player.js"></script>
+</body>
+</html>
