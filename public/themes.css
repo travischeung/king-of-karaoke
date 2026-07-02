@@ -1,0 +1,59 @@
+/* ============================================================
+   THEMES — each theme is one [data-theme="…"] block of tokens.
+   Add a new theme = copy a block, rename, retune. Nothing in
+   player.css needs to change. Swap at runtime by setting
+   <html data-theme="…">; override --scene-bg inline for an
+   uploaded image (see theme.js).
+
+   Token contract every theme should define:
+     --pink        cabinet mid tone
+     --pink-lite   cabinet highlight / light text
+     --pink-deep   cabinet deep tone (screen frame, knobs)
+     --pink-shadow deepest shadow (button base)
+     --case-hi     cabinet gradient top
+     --case-lo     cabinet gradient bottom
+     --neon        side-panel accent / glow
+     --cyan        secondary accent (join URL, "added by", titles)
+     --ink         dark text on the cabinet
+     --screen-tint CRT glow color (screen edge + idle wash)
+     --scene-bg    full backdrop (gradient stack or url(); shows
+                   AROUND the TV as the reaction canvas)
+   ============================================================ */
+
+[data-theme="pink"] {
+  --pink: #ff77ac;
+  --pink-lite: #ffc2db;
+  --pink-deep: #c23e73;
+  --pink-shadow: #7d2249;
+  --case-hi: #ffa9c9;
+  --case-lo: #e2588f;
+  --neon: #ff5ea8;
+  --cyan: #56e1ec;
+  --ink: #2a0d1c;
+  --screen-tint: rgba(255, 94, 168, .28);
+  --scene-bg:
+    radial-gradient(circle at 50% 30%, #3a1030 0%, #1a0a17 55%, #0c0610 100%),
+    repeating-linear-gradient(0deg, transparent 0 38px, rgba(255,94,168,.05) 38px 39px),
+    repeating-linear-gradient(90deg, transparent 0 38px, rgba(86,225,236,.04) 38px 39px);
+}
+
+/* Approximation of the red-CRT / gold-tinsel reference. Kept a touch dark +
+   vignetted so background reactions (emojis, fireworks) read clearly on top. */
+[data-theme="red-tinsel"] {
+  --pink: #e8382b;
+  --pink-lite: #ffb3ab;
+  --pink-deep: #8f1a10;
+  --pink-shadow: #4d0a06;
+  --case-hi: #ff7a5e;
+  --case-lo: #b81f12;
+  --neon: #ff4d3d;
+  --cyan: #ffd24a;                          /* gold accent (ref's highlighted track is yellow) */
+  --ink: #2a0604;
+  --screen-tint: rgba(74, 140, 255, .38);   /* blue CRT glow like the reference */
+  --scene-bg:
+    radial-gradient(120% 70% at 50% 8%, rgba(255,70,40,.42), transparent 58%),
+    radial-gradient(120% 90% at 50% 120%, rgba(120,0,0,.7), transparent 72%),
+    repeating-linear-gradient(93deg,
+      #3f2c00 0 5px, #9c7400 5px 9px, #ffe488 9px 12px, #b3830f 12px 17px, #33240055 17px 23px),
+    linear-gradient(#140900, #080300);
+}

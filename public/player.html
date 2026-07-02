@@ -1,15 +1,26 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="red-tinsel">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🎤 KARA·TRON</title>
+  <title>🎤 K-TV</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=VT323&family=Michroma&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/themes.css" />
   <link rel="stylesheet" href="/player.css" />
 </head>
 <body class="player">
+  <!-- Background reaction canvas: emojis / fireworks animate here, behind the TV -->
+  <div id="reactions" aria-hidden="true"></div>
+
+  <!-- Host theme control (subtle, top-right) -->
+  <div id="theme-bar">
+    <label>🎨 <select id="theme-select"></select></label>
+    <label class="upload-btn">📷 BG<input id="theme-upload" type="file" accept="image/*" hidden /></label>
+    <button id="theme-clear" title="Clear uploaded background">✕</button>
+  </div>
+
   <!-- One-time click to satisfy autoplay-with-sound -->
   <div id="start-overlay">
     <div class="start-card">
@@ -22,7 +33,7 @@
     <!-- ===== The TV ===== -->
     <div class="tv">
       <div class="tv-top">
-        <span class="brand">KARA·TRON</span>
+        <span class="brand">K-TV</span>
         <span class="model">MODEL KT-88 · STEREO COLOR</span>
       </div>
 
@@ -78,6 +89,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
+  <script src="/theme.js"></script>
   <script src="/player.js"></script>
 </body>
 </html>

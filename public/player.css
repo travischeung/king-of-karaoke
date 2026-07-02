@@ -1,21 +1,16 @@
 /* ============================================================
-   KARA·TRON — pink 80s/90s boxy CRT player screen.
+   K-TV — boxy CRT player screen (STRUCTURAL ONLY).
+   All colors/background come from CSS variables set per theme
+   in themes.css ([data-theme="…"]). Swapping data-theme (or
+   overriding --scene-bg inline) hot-swaps the look instantly.
    Self-contained (the /remote page keeps using style.css).
    JS hooks preserved: #start-overlay #start-btn #player-frame
    #idle #qrcode #join-url #playpause #skip #queue
    ============================================================ */
 
 :root {
-  --pink: #ff77ac;
-  --pink-lite: #ffc2db;
-  --pink-deep: #c23e73;
-  --pink-shadow: #7d2249;
-  --case-hi: #ffa9c9;
-  --case-lo: #e2588f;
+  /* Non-themeable structural tokens */
   --screen: #07070c;
-  --neon: #ff5ea8;
-  --cyan: #56e1ec;
-  --ink: #2a0d1c;
   --font-crt: 'VT323', ui-monospace, monospace;
   --font-tech: 'Michroma', system-ui, sans-serif;
 }
@@ -28,17 +23,16 @@ body.player {
   overflow: hidden;
   color: #fff;
   font-family: var(--font-tech);
-  background:
-    radial-gradient(circle at 50% 30%, #3a1030 0%, #1a0a17 55%, #0c0610 100%),
-    repeating-linear-gradient(0deg, transparent 0 38px, rgba(255, 94, 168, 0.05) 38px 39px),
-    repeating-linear-gradient(90deg, transparent 0 38px, rgba(86, 225, 236, 0.04) 38px 39px);
+  background: var(--scene-bg);   /* themed backdrop (or uploaded image) */
+  background-size: cover;
+  background-position: center;
 }
 
 /* ---------- Power-on overlay ---------- */
 #start-overlay {
   position: fixed; inset: 0; z-index: 100;
   display: flex; align-items: center; justify-content: center; text-align: center;
-  background: radial-gradient(circle at 50% 45%, #2a0d22, #07040a);
+  background: radial-gradient(circle at 50% 45%, #221016, #07040a);
 }
 .start-card { animation: flicker 3s infinite; }
 #start-btn {
@@ -46,15 +40,41 @@ body.player {
   font-size: 1.9rem; letter-spacing: .15em; font-weight: 700;
   padding: 1.2rem 2.6rem; border: none; border-radius: 14px; cursor: pointer;
   color: #fff; background: linear-gradient(180deg, var(--case-hi), var(--case-lo));
-  box-shadow: 0 8px 0 var(--pink-shadow), 0 0 40px rgba(255, 94, 168, 0.6);
+  box-shadow: 0 8px 0 var(--pink-shadow), 0 0 40px color-mix(in srgb, var(--neon) 60%, transparent);
   text-shadow: 0 2px 0 rgba(0,0,0,.3);
 }
-#start-btn:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--pink-shadow), 0 0 24px rgba(255,94,168,.5); }
+#start-btn:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--pink-shadow), 0 0 24px color-mix(in srgb, var(--neon) 50%, transparent); }
 #start-overlay p { margin-top: 1.4rem; color: var(--pink-lite); font-family: var(--font-crt); font-size: 1.4rem; letter-spacing: .05em; }
 @keyframes flicker { 0%,97%,100% { opacity: 1; } 98% { opacity: .82; } 99% { opacity: .95; } }
 
+/* ---------- Theme control (host, top-right; subtle until hover) ---------- */
+#theme-bar {
+  position: fixed; top: 12px; right: 14px; z-index: 60;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: 10px;
+  background: rgba(0,0,0,.45); backdrop-filter: blur(4px);
+  font-family: var(--font-tech); font-size: .72rem; color: #fff;
+  opacity: .3; transition: opacity .2s;
+}
+#theme-bar:hover { opacity: 1; }
+#theme-bar label { display: flex; align-items: center; gap: 4px; }
+#theme-bar select, #theme-bar .upload-btn, #theme-bar button {
+  font: inherit; color: #fff; cursor: pointer;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+  border-radius: 6px; padding: 4px 6px;
+}
+
+/* ---------- Background reaction canvas ---------- */
+/* Sits above the scene backdrop but behind the TV/panels. Reaction animations
+   (emojis floating up, fireworks, etc.) render here in the space around the TV. */
+#reactions {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; overflow: hidden;
+}
+
 /* ---------- Stage layout ---------- */
 #stage {
+  position: relative; z-index: 1;   /* above the reaction canvas */
   height: 100vh;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 380px;
@@ -70,10 +90,10 @@ body.player {
   border-radius: 26px;
   padding: 18px 20px 20px;
   box-shadow:
-    inset 0 3px 0 rgba(255,255,255,.55),
-    inset 0 -8px 22px rgba(125,34,73,.55),
+    inset 0 3px 0 rgba(255,255,255,.5),
+    inset 0 -8px 22px color-mix(in srgb, var(--pink-shadow) 55%, transparent),
     0 26px 60px rgba(0,0,0,.6);
-  border: 2px solid #ffd0e2;
+  border: 2px solid var(--pink-lite);
 }
 
 .tv-top { display: flex; align-items: baseline; justify-content: space-between; padding: 0 6px 12px; }
@@ -90,8 +110,8 @@ body.player {
   flex: 1; min-width: 0;
   padding: 14px;
   border-radius: 16px;
-  background: linear-gradient(160deg, #d24d86, #a5326a);
-  box-shadow: inset 0 4px 10px rgba(0,0,0,.35), inset 0 -2px 0 rgba(255,255,255,.25);
+  background: linear-gradient(160deg, var(--pink-deep), var(--pink-shadow));
+  box-shadow: inset 0 4px 10px rgba(0,0,0,.35), inset 0 -2px 0 rgba(255,255,255,.2);
 }
 .screen {
   position: relative;
@@ -103,7 +123,7 @@ body.player {
   box-shadow:
     inset 0 0 0 3px #050509,
     inset 0 0 60px rgba(0,0,0,.9),
-    0 0 22px rgba(255,94,168,.25);
+    0 0 26px var(--screen-tint);
 }
 #player-frame, .screen iframe {
   position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
@@ -137,6 +157,7 @@ body.player {
   position: absolute; inset: 0; z-index: 3;
   display: flex; align-items: center; justify-content: center; text-align: center;
   background: repeating-linear-gradient(0deg, #0a0a12 0 2px, #0d0d16 2px 4px);
+  box-shadow: inset 0 0 140px var(--screen-tint);   /* themed CRT wash */
 }
 .idle-inner { font-family: var(--font-crt); color: var(--cyan); line-height: 1.25; }
 .idle .noise { display: block; font-size: 2.4rem; color: var(--pink); letter-spacing: .3em; opacity: .8; }
@@ -152,15 +173,15 @@ body.player {
 .speaker {
   width: 100%; height: 150px; border-radius: 10px;
   background:
-    repeating-linear-gradient(0deg, rgba(125,34,73,.85) 0 4px, transparent 4px 9px),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--pink-shadow) 85%, transparent) 0 4px, transparent 4px 9px),
     linear-gradient(180deg, var(--case-hi), var(--case-lo));
-  box-shadow: inset 0 2px 4px rgba(255,255,255,.4), inset 0 -3px 8px rgba(125,34,73,.6);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,.4), inset 0 -3px 8px color-mix(in srgb, var(--pink-shadow) 60%, transparent);
 }
 .knobs { display: flex; gap: 12px; }
 .knob {
   width: 34px; height: 34px; border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fff 0%, var(--pink-lite) 30%, var(--pink-deep) 100%);
-  box-shadow: 0 3px 5px rgba(0,0,0,.4), inset 0 -2px 3px rgba(125,34,73,.7);
+  box-shadow: 0 3px 5px rgba(0,0,0,.4), inset 0 -2px 3px color-mix(in srgb, var(--pink-shadow) 70%, transparent);
   display: flex; align-items: center; justify-content: center;
 }
 .knob i { width: 3px; height: 12px; background: var(--ink); border-radius: 2px; transform: translateY(-5px) rotate(30deg); }
@@ -192,11 +213,12 @@ body.player {
   border: 2px solid var(--neon);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 0 22px rgba(255,94,168,.28), inset 0 0 22px rgba(255,94,168,.08);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--neon) 28%, transparent),
+              inset 0 0 22px color-mix(in srgb, var(--neon) 8%, transparent);
 }
 .panel-title {
   font-family: var(--font-tech); font-size: .95rem; letter-spacing: .18em; color: var(--cyan);
-  text-shadow: 0 0 10px rgba(86,225,236,.6); margin-bottom: 12px;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--cyan) 60%, transparent); margin-bottom: 12px;
 }
 
 /* QR */
@@ -216,8 +238,8 @@ body.player {
 .queue::-webkit-scrollbar-thumb { background: var(--pink-deep); border-radius: 8px; }
 .queue li {
   display: flex; align-items: center; gap: 10px;
-  background: rgba(255, 94, 168, .10);
-  border: 1px solid rgba(255,94,168,.35);
+  background: color-mix(in srgb, var(--neon) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--neon) 35%, transparent);
   border-radius: 10px; padding: 8px; margin-bottom: 8px;
   cursor: grab;
 }
@@ -227,7 +249,7 @@ body.player {
 .queue .meta .by { font-family: var(--font-crt); font-size: 1rem; color: var(--cyan); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .queue .rm {
   flex: none; width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
-  border: none; color: var(--pink-lite); background: rgba(125,34,73,.6); font-size: 1rem;
+  border: none; color: var(--pink-lite); background: color-mix(in srgb, var(--pink-shadow) 60%, transparent); font-size: 1rem;
 }
 .queue .rm:hover { background: var(--pink-deep); color: #fff; }
 
