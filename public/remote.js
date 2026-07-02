@@ -22,6 +22,12 @@ function renderName() {
 }
 document.getElementById('name-btn').onclick = promptName;
 
+// --- Transport controls (drive the player screen) ---
+const ppBtn = document.getElementById('r-playpause');
+document.getElementById('r-restart').onclick = () => socket.emit('restart');
+document.getElementById('r-skip').onclick = () => socket.emit('skip');
+ppBtn.onclick = () => socket.emit('togglePlay', { playing: !state.isPlaying });
+
 // --- Search ---
 const qEl = document.getElementById('q');
 const kkEl = document.getElementById('kk');
@@ -86,6 +92,14 @@ function render() {
     ? '🎵 ' + state.current.title
     : 'Nothing playing';
   document.getElementById('count').textContent = state.queue.length ? `(${state.queue.length})` : '';
+
+  // Transport reflects playback state; disabled when nothing is playing.
+  ppBtn.textContent = state.isPlaying ? '⏸ Pause' : '▶ Play';
+  const noSong = !state.current;
+  document.getElementById('transport').classList.toggle('disabled', noSong);
+  ['r-restart', 'r-playpause', 'r-skip'].forEach((id) => {
+    document.getElementById(id).disabled = noSong;
+  });
 
   const ol = document.getElementById('queue');
   ol.innerHTML = '';

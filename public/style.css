@@ -75,6 +75,18 @@ button { font: inherit; cursor: pointer; border: none; border-radius: 10px; colo
 }
 #now { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #name-btn { background: var(--panel-2); padding: .5rem .7rem; font-size: .85rem; flex: none; }
+/* ---------- Transport (remote playback controls) ---------- */
+.transport { display: flex; gap: .5rem; margin-top: .6rem; }
+.transport button {
+  flex: 1; padding: .85rem .5rem; font-size: 1rem; font-weight: 700;
+  background: var(--panel-2); color: var(--text); border-radius: 12px;
+}
+.transport button:active { background: var(--accent); }
+.transport #r-playpause { background: var(--accent); color: #fff; }
+.transport #r-playpause:active { background: var(--accent-2); }
+.transport.disabled { opacity: .45; }
+.transport button:disabled { pointer-events: none; }
+
 .search-bar { display: flex; align-items: center; gap: .5rem; margin-top: .75rem; }
 #q { flex: 1; padding: .9rem; font-size: 1rem; border-radius: 12px; border: 1px solid #33333f; background: var(--panel); color: var(--text); }
 .kk { font-size: .85rem; color: var(--muted); display: flex; align-items: center; gap: .3rem; flex: none; }

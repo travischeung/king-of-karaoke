@@ -82,6 +82,12 @@ io.on('connection', (socket) => {
   socket.on('remove', (p = {}) => { queue.remove(p.uid); broadcast(); });
   socket.on('skip', () => { queue.advance(); broadcast(); });
   socket.on('songEnded', () => { queue.advance(); broadcast(); });
+  socket.on('restart', () => {
+    // Transient command — tell the player page to seek the current song to 0:00.
+    queue.togglePlay(true);
+    io.emit('restart');
+    broadcast();
+  });
   socket.on('togglePlay', (p = {}) => {
     queue.togglePlay(typeof p.playing === 'boolean' ? p.playing : undefined);
     broadcast();
