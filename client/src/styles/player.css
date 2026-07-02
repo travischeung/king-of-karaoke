@@ -3,9 +3,6 @@
    All colors/background come from CSS variables set per theme
    in themes.css ([data-theme="…"]). Swapping data-theme (or
    overriding --scene-bg inline) hot-swaps the look instantly.
-   Self-contained (the /remote page keeps using style.css).
-   JS hooks preserved: #start-overlay #start-btn #player-frame
-   #idle #qrcode #join-url #playpause #skip #queue
    ============================================================ */
 
 :root {

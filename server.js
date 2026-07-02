@@ -18,10 +18,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve the built React client (Vite build output). Run `npm run build` first.
+app.use(express.static(path.join(__dirname, 'dist')));
 app.get('/', (req, res) => res.redirect('/player'));
-app.get('/player', (req, res) => res.sendFile(path.join(__dirname, 'public', 'player.html')));
-app.get('/remote', (req, res) => res.sendFile(path.join(__dirname, 'public', 'remote.html')));
+app.get('/player', (req, res) => res.sendFile(path.join(__dirname, 'dist', 'player.html')));
+app.get('/remote', (req, res) => res.sendFile(path.join(__dirname, 'dist', 'remote.html')));
 
 function lanIp() {
   for (const nets of Object.values(os.networkInterfaces())) {

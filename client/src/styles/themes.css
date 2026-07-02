@@ -3,7 +3,7 @@
    Add a new theme = copy a block, rename, retune. Nothing in
    player.css needs to change. Swap at runtime by setting
    <html data-theme="…">; override --scene-bg inline for an
-   uploaded image (see theme.js).
+   uploaded image (see useTheme.ts).
 
    Token contract every theme should define:
      --pink        cabinet mid tone
