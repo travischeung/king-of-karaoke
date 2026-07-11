@@ -15,6 +15,8 @@ const PORT = process.env.PORT || 3000;
 queue.load();
 
 const app = express();
+// Behind Render's proxy: trust X-Forwarded-* so req.ip is the real client, not the proxy.
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -36,10 +38,25 @@ const REMOTE_URL = `http://${lanIp()}:${PORT}/remote`;
 
 app.get('/api/info', (req, res) => res.json({ remoteUrl: REMOTE_URL }));
 
+// Per-IP throttle for the search endpoint. The YouTube quota is small and this
+// instance is public, so one abusive client shouldn't be able to drain the day's
+// quota. Generous enough that a human typing (400ms debounce) never hits it.
+const searchHits = new Map(); // ip -> { count, resetAt }
+function allowSearch(ip, max = 20, windowMs = 10_000) {
+  const now = Date.now();
+  if (searchHits.size > 5000) searchHits.clear(); // crude cap so the map can't grow unbounded
+  const e = searchHits.get(ip);
+  if (!e || now > e.resetAt) { searchHits.set(ip, { count: 1, resetAt: now + windowMs }); return true; }
+  if (e.count >= max) return false;
+  e.count++;
+  return true;
+}
+
 // In-app search (server-side so the API key never reaches the browser).
 app.get('/api/search', async (req, res) => {
   const q = String(req.query.q || '').trim();
   if (!q) return res.json({ items: [] });
+  if (!allowSearch(req.ip)) return res.status(429).json({ error: 'rate_limited' });
   if (!process.env.YOUTUBE_API_KEY) return res.status(503).json({ error: 'no_api_key' });
   try {
     res.json({ items: await search(q, process.env.YOUTUBE_API_KEY) });

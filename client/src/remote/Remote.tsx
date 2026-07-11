@@ -4,7 +4,7 @@ import { socket } from '../lib/socket';
 import { useAppState } from '../lib/hooks';
 import type { SearchItem } from '../lib/types';
 
-const REACTIONS = ['👏'];
+const REACTIONS = ['👏', '👎'];
 
 // The phone remote: search / paste, add or "play next", transport controls, and the queue.
 // Never plays video — only sends intents to the server.
@@ -53,6 +53,10 @@ export default function Remote() {
         if (r.status === 503) {
           setResults([]);
           setSearchMsg('Search needs an API key — use “Paste a YouTube link” below.');
+          return;
+        }
+        if (r.status === 429) {
+          setSearchMsg('Slow down a sec — too many searches.');
           return;
         }
         const { items } = await r.json();

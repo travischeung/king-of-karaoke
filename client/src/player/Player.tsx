@@ -5,6 +5,13 @@ import { socket } from '../lib/socket';
 import { useAppState } from '../lib/hooks';
 import { useTheme, THEMES } from './useTheme';
 import clapUrl from '../assets/clap.png';
+import thumbsDownUrl from '../assets/thumbsdown.png';
+
+// Maps a reaction emoji to the image sprayed on the player screen. Unknown emojis fall back to clap.
+const REACTION_IMAGES: Record<string, string> = {
+  '👏': clapUrl,
+  '👎': thumbsDownUrl,
+};
 
 // The player screen: the only page that plays video. Renders the TV chrome + QR,
 // mirrors the shared queue, and drives playback imperatively via the YouTube API.
@@ -163,10 +170,10 @@ export default function Player() {
       }
     };
 
-    const onReaction = () => {
+    const onReaction = (p: { emoji?: string } = {}) => {
       const el = document.createElement('img');
       el.className = 'reaction';
-      el.src = clapUrl;
+      el.src = REACTION_IMAGES[p.emoji ?? ''] ?? clapUrl;
       el.alt = '';
       el.style.setProperty('--x', (Math.random() * 88 + 2).toFixed(1) + '%');
       el.style.setProperty('--size', Math.round(Math.random() * 180 + 240) + 'px');

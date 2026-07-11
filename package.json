@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Lightweight karaoke queue — a YouTube wrapper you can queue to by scanning a QR code.",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "start": "node server.js",
     "build": "vite build",

@@ -1,0 +1,15 @@
+# Render Blueprint — deploys the karaoke server as a public web service.
+# Push this to GitHub, then in Render: New → Blueprint → pick this repo.
+# Render provides PORT and terminates HTTPS/wss for you; the app needs no other change.
+services:
+  - type: web
+    name: king-of-karaoke
+    runtime: node
+    plan: free # free instances sleep after ~15 min idle (first hit is a ~30s cold start)
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      # Set the value in the Render dashboard (marked secret, never committed).
+      # Optional: without it, in-app search is off but paste-a-link still works.
+      - key: YOUTUBE_API_KEY
+        sync: false
