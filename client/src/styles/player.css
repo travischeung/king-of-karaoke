@@ -101,18 +101,20 @@ body.player {
   position: relative; z-index: 1;   /* above the reaction canvas */
   height: 100vh;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 26px;
-  padding: 26px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 14px;
+  padding: 12px;
+  min-height: 0;
 }
 
 /* ============ The TV ============ */
 .tv {
-  align-self: center;
+  align-self: stretch;
+  min-height: 0;
   display: flex; flex-direction: column;
   background: linear-gradient(160deg, var(--case-hi) 0%, var(--pink) 42%, var(--case-lo) 100%);
-  border-radius: 26px;
-  padding: 18px 20px 20px;
+  border-radius: 20px;
+  padding: 10px 12px 12px;
   box-shadow:
     inset 0 3px 0 rgba(255,255,255,.5),
     inset 0 -8px 22px color-mix(in srgb, var(--pink-shadow) 55%, transparent),
@@ -120,28 +122,33 @@ body.player {
   border: 2px solid var(--pink-lite);
 }
 
-.tv-top { display: flex; align-items: baseline; justify-content: space-between; padding: 0 6px 12px; }
+.tv-top { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px 8px; flex: none; }
 .brand {
-  font-family: var(--font-tech); font-weight: 700; font-size: 1.5rem; letter-spacing: .12em;
+  font-family: var(--font-tech); font-weight: 700; font-size: 1.25rem; letter-spacing: .12em;
   color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,.5);
 }
-.model { font-family: var(--font-crt); font-size: 1rem; letter-spacing: .1em; color: var(--pink-shadow); }
+.model { font-family: var(--font-crt); font-size: .9rem; letter-spacing: .1em; color: var(--pink-shadow); }
 
-.tv-body { display: flex; gap: 16px; }
+.tv-body { display: flex; gap: 12px; flex: 1; min-height: 0; }
 
 /* ----- Screen ----- */
 .screen-area {
-  flex: 1; min-width: 0;
-  padding: 14px;
-  border-radius: 16px;
+  flex: 1; min-width: 0; min-height: 0;
+  padding: 8px;
+  border-radius: 14px;
   background: linear-gradient(160deg, var(--pink-deep), var(--pink-shadow));
   box-shadow: inset 0 4px 10px rgba(0,0,0,.35), inset 0 -2px 0 rgba(255,255,255,.2);
+  display: flex; align-items: center; justify-content: center;
+  container-type: size;
 }
 .screen {
   position: relative;
   aspect-ratio: 16 / 9;
-  width: 100%;
-  border-radius: 12px / 16px;   /* subtle CRT bow */
+  /* Largest 16:9 box that fits the bezel (width- or height-limited) */
+  width: min(100cqi, calc(100cqb * 16 / 9));
+  height: auto;
+  max-height: 100%;
+  border-radius: 10px / 14px;   /* subtle CRT bow */
   overflow: hidden;
   background: var(--screen);
   box-shadow:
@@ -190,12 +197,12 @@ body.player {
 
 /* ----- Control column (speaker / knobs / power) ----- */
 .control-column {
-  width: 96px; flex: none;
-  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  width: 72px; flex: none;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
   padding-top: 4px;
 }
 .speaker {
-  width: 100%; height: 150px; border-radius: 10px;
+  width: 100%; height: 110px; border-radius: 10px;
   background:
     repeating-linear-gradient(0deg, color-mix(in srgb, var(--pink-shadow) 85%, transparent) 0 4px, transparent 4px 9px),
     linear-gradient(180deg, var(--case-hi), var(--case-lo));
@@ -219,24 +226,24 @@ body.player {
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
 
 /* ----- Physical control buttons ----- */
-.tv-controls { display: flex; gap: 14px; margin-top: 16px; padding: 0 4px; }
+.tv-controls { display: flex; gap: 10px; margin-top: 10px; padding: 0 4px; flex: none; }
 .tvbtn {
   flex: 1;
-  font-family: var(--font-tech); font-size: 1.15rem; letter-spacing: .08em; font-weight: 700;
+  font-family: var(--font-tech); font-size: 1rem; letter-spacing: .08em; font-weight: 700;
   color: var(--ink); cursor: pointer;
-  padding: .85rem 1rem; border: none; border-radius: 12px;
+  padding: .65rem .85rem; border: none; border-radius: 10px;
   background: linear-gradient(180deg, #fff0f6, var(--pink-lite));
   box-shadow: 0 6px 0 var(--pink-deep), inset 0 2px 0 rgba(255,255,255,.8);
 }
 .tvbtn:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--pink-deep), inset 0 2px 0 rgba(255,255,255,.8); }
 
 /* ============ Side channel panel ============ */
-#side { display: flex; flex-direction: column; gap: 20px; min-height: 0; }
+#side { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .panel {
   background: rgba(20, 8, 18, .72);
   border: 2px solid var(--neon);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 12px;
   box-shadow: 0 0 22px color-mix(in srgb, var(--neon) 28%, transparent),
               inset 0 0 22px color-mix(in srgb, var(--neon) 8%, transparent);
 }
