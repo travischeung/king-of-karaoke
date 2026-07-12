@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 
 export const THEMES = [
-  { id: 'red-tinsel', label: 'Red Tinsel' },
   { id: 'pink', label: 'Pink CRT' },
+  { id: 'red-tinsel', label: 'Red Tinsel' },
 ];
-const DEFAULT_THEME = 'red-tinsel';
+const DEFAULT_THEME = 'pink';
 const LS_THEME = 'kk-theme';
 const LS_BG = 'kk-custom-bg';
 

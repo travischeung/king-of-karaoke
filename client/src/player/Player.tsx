@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import Sortable from 'sortablejs';
 import { socket } from '../lib/socket';
 import { useAppState } from '../lib/hooks';
-import { useTheme, THEMES } from './useTheme';
+import { useTheme } from './useTheme';
 import clapUrl from '../assets/clap.png';
 import thumbsDownUrl from '../assets/thumbsdown.png';
 
@@ -24,13 +23,16 @@ export default function Player() {
   const startedRef = useRef(false);
   const readyRef = useRef(false);
   const playerRef = useRef<any>(null);
-  const loadedRef = useRef<string | null>(null);
-  const advancedRef = useRef<string | null>(null);
-  const queueOlRef = useRef<HTMLOListElement>(null);
+  // Track by queue entry uid (not videoId) so back-to-back duplicates still reload/seek.
+  const loadedUidRef = useRef<string | null>(null);
+  const loadedVideoIdRef = useRef<string | null>(null);
+  const advancedUidRef = useRef<string | null>(null);
+  // Ignore stale ENDED events from the previous video after we load the next one.
+  const suppressEndedRef = useRef(false);
   const reactionsRef = useRef<HTMLDivElement>(null);
 
   const [qr, setQr] = useState<{ url: string; img: string }>({ url: '', img: '' });
-  const { theme, selectTheme, uploadBackground, clearBackground } = useTheme();
+  useTheme(); // applies Pink CRT (or saved theme) — UI controls hidden for now
 
   // --- Imperative sync: reconcile the YouTube player with the shared state ---
   const syncRef = useRef<() => void>(() => {});
@@ -39,11 +41,18 @@ export default function Player() {
     if (!readyRef.current || !startedRef.current || !p) return;
     const cur = stateRef.current.current;
     if (!cur) {
-      if (loadedRef.current) { p.stopVideo(); loadedRef.current = null; }
+      if (loadedUidRef.current) {
+        p.stopVideo();
+        loadedUidRef.current = null;
+        loadedVideoIdRef.current = null;
+      }
       return;
     }
-    if (cur.videoId !== loadedRef.current) {
-      loadedRef.current = cur.videoId;
+    if (cur.uid !== loadedUidRef.current) {
+      loadedUidRef.current = cur.uid;
+      loadedVideoIdRef.current = cur.videoId;
+      suppressEndedRef.current = true;
+      // Always load by uid change (including duplicate videoIds from pasted links).
       p.loadVideoById(cur.videoId);
       return;
     }
@@ -53,10 +62,21 @@ export default function Player() {
     if (!stateRef.current.isPlaying && st === YT.PlayerState.PLAYING) p.pauseVideo();
   };
 
+  // Advance at most once per loaded queue entry. Sends uid so the server can drop stale events.
   const advanceOnce = () => {
-    if (advancedRef.current === loadedRef.current) return;
-    advancedRef.current = loadedRef.current;
-    socket.emit('songEnded');
+    const uid = loadedUidRef.current;
+    if (!uid || advancedUidRef.current === uid) return;
+    advancedUidRef.current = uid;
+    socket.emit('songEnded', { uid });
+  };
+
+  const skipCurrent = () => {
+    const uid = stateRef.current.current?.uid ?? loadedUidRef.current;
+    if (!uid) return;
+    // Mark locally so a late ENDED can't also advance this same entry.
+    advancedUidRef.current = uid;
+    suppressEndedRef.current = true;
+    socket.emit('skip', { uid });
   };
 
   // --- Set up the YouTube player once ---
@@ -72,9 +92,16 @@ export default function Player() {
         events: {
           onReady: () => { readyRef.current = true; syncRef.current(); },
           onStateChange: (e: any) => {
-            if (e.data === window.YT.PlayerState.ENDED) advanceOnce();
+            const YT = window.YT;
+            // New video is actually playing — safe to honor end events again.
+            if (e.data === YT.PlayerState.PLAYING) suppressEndedRef.current = false;
+            if (e.data === YT.PlayerState.ENDED) {
+              if (suppressEndedRef.current) return;
+              advanceOnce();
+            }
           },
-          onError: () => socket.emit('skip'),
+          // Unplayable (common with pasted non-embeddable links) — same guarded advance path.
+          onError: () => advanceOnce(),
         },
       });
     }
@@ -93,8 +120,8 @@ export default function Player() {
     // Cut ~0.4s before the true end so YouTube's suggested-video wall never appears.
     const interval = window.setInterval(() => {
       const p = playerRef.current;
-      if (!readyRef.current || !startedRef.current || !p || !loadedRef.current) return;
-      if (!stateRef.current.isPlaying) return;
+      if (!readyRef.current || !startedRef.current || !p || !loadedUidRef.current) return;
+      if (!stateRef.current.isPlaying || suppressEndedRef.current) return;
       let dur = 0, cur = 0;
       try { dur = p.getDuration(); cur = p.getCurrentTime(); } catch { return; }
       if (dur > 0 && dur - cur <= 0.4) advanceOnce();
@@ -102,7 +129,7 @@ export default function Player() {
 
     const onRestart = () => {
       const p = playerRef.current;
-      if (p && startedRef.current && loadedRef.current) { p.seekTo(0, true); p.playVideo(); }
+      if (p && startedRef.current && loadedUidRef.current) { p.seekTo(0, true); p.playVideo(); }
     };
     socket.on('restart', onRestart);
 
@@ -125,25 +152,6 @@ export default function Player() {
       const img = await QRCode.toDataURL(joinUrl, { width: 180, margin: 1 });
       setQr({ url: joinUrl, img });
     })();
-  }, []);
-
-  // --- Drag-to-reorder (revert Sortable's DOM change; server broadcast is the source of truth) ---
-  useEffect(() => {
-    if (!queueOlRef.current) return;
-    const s = Sortable.create(queueOlRef.current, {
-      animation: 150,
-      onEnd: (evt) => {
-        const { oldIndex, newIndex, item, from } = evt;
-        if (oldIndex == null || newIndex == null || oldIndex === newIndex) return;
-        from.removeChild(item);
-        from.insertBefore(item, from.children[oldIndex] ?? null);
-        const q = stateRef.current.queue.slice();
-        const [moved] = q.splice(oldIndex, 1);
-        q.splice(newIndex, 0, moved);
-        socket.emit('reorderAll', { uids: q.map((x) => x.uid) });
-      },
-    });
-    return () => s.destroy();
   }, []);
 
   // --- Emoji reactions: spawn a floating particle per broadcast ---
@@ -204,21 +212,6 @@ export default function Player() {
     <>
       <div id="reactions" aria-hidden="true" ref={reactionsRef} />
 
-      <div id="theme-bar">
-        <label>
-          🎨{' '}
-          <select value={theme} onChange={(e) => selectTheme(e.target.value)}>
-            {THEMES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-          </select>
-        </label>
-        <label className="upload-btn">
-          📷 BG
-          <input type="file" accept="image/*" hidden
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadBackground(f); }} />
-        </label>
-        <button title="Clear uploaded background" onClick={clearBackground}>✕</button>
-      </div>
-
       {!started && (
         <div id="start-overlay">
           <div className="start-card">
@@ -265,11 +258,26 @@ export default function Player() {
             <button className="tvbtn" onClick={() => socket.emit('togglePlay', { playing: !state.isPlaying })}>
               {state.isPlaying ? '⏸ Pause' : '▶ Play'}
             </button>
-            <button className="tvbtn" onClick={() => socket.emit('skip')}>⏭ SKIP</button>
+            <button className="tvbtn" onClick={skipCurrent}>⏭ SKIP</button>
           </div>
         </div>
 
         <aside id="side">
+          <section className="panel now-panel">
+            <div className="panel-title">♪ NOW PLAYING</div>
+            {state.current ? (
+              <div className="now-playing">
+                <img src={state.current.thumb} alt="" />
+                <div className="meta">
+                  <span className="t">{state.current.title}</span>
+                  <span className="by">{state.current.addedBy || 'Guest'}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="now-empty">Nothing playing</div>
+            )}
+          </section>
+
           <section className="panel qr-panel">
             <div className="panel-title">📡 TUNE IN</div>
             <div id="qrcode">{qr.img && <img src={qr.img} alt="Join QR code" />}</div>
@@ -278,15 +286,14 @@ export default function Player() {
 
           <section className="panel queue-panel">
             <div className="panel-title">▶ UP NEXT</div>
-            <ol id="queue" className="queue" ref={queueOlRef}>
+            <ol id="queue" className="queue queue-readonly">
               {state.queue.map((s) => (
-                <li key={s.uid} data-uid={s.uid}>
+                <li key={s.uid}>
                   <img src={s.thumb} alt="" />
                   <div className="meta">
                     <span className="t">{s.title}</span>
                     <span className="by">{s.addedBy || ''}</span>
                   </div>
-                  <button className="rm" title="Remove" onClick={() => socket.emit('remove', { uid: s.uid })}>✕</button>
                 </li>
               ))}
             </ol>

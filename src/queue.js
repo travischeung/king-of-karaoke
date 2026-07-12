@@ -66,11 +66,21 @@ export function addSong(song, next = false) {
 
 // Reorder the whole queue to match a list of uids (from a drag-and-drop reorder).
 export function reorderAll(uids = []) {
+  if (!Array.isArray(uids) || !uids.length) return;
   const byUid = new Map(state.queue.map((s) => [s.uid, s]));
-  const reordered = uids.map((u) => byUid.get(u)).filter(Boolean);
-  // Safety: keep any songs that weren't in the incoming list (e.g. added mid-drag).
+  const seen = new Set();
+  const reordered = [];
+  for (const u of uids) {
+    if (!u || seen.has(u)) continue;
+    const s = byUid.get(u);
+    // Skip unknowns (already playing as current, removed, or stale client snapshot).
+    if (!s) continue;
+    seen.add(u);
+    reordered.push(s);
+  }
+  // Keep any songs the client didn't mention (e.g. added mid-drag) at the end.
   for (const s of state.queue) {
-    if (!uids.includes(s.uid)) reordered.push(s);
+    if (!seen.has(s.uid)) reordered.push(s);
   }
   state.queue = reordered;
   save();

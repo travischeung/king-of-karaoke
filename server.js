@@ -98,8 +98,15 @@ io.on('connection', (socket) => {
   socket.on('reorderAll', (p = {}) => { queue.reorderAll(p.uids || []); broadcast(); });
   socket.on('playNext', (p = {}) => { queue.playNext(p.uid); broadcast(); });
   socket.on('remove', (p = {}) => { queue.remove(p.uid); broadcast(); });
-  socket.on('skip', () => { queue.advance(); broadcast(); });
-  socket.on('songEnded', () => { queue.advance(); broadcast(); });
+  // Ignore stale skip/songEnded when the queue has already moved on (end+skip race, late ENDED).
+  const advanceIfCurrent = (p = {}) => {
+    const cur = queue.getState().current;
+    if (p.uid && cur && p.uid !== cur.uid) return;
+    queue.advance();
+    broadcast();
+  };
+  socket.on('skip', advanceIfCurrent);
+  socket.on('songEnded', advanceIfCurrent);
   socket.on('restart', () => {
     // Transient command — tell the player page to seek the current song to 0:00.
     queue.togglePlay(true);

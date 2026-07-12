@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import Sortable from 'sortablejs';
 import { socket } from '../lib/socket';
 import { useAppState } from '../lib/hooks';
-import type { SearchItem } from '../lib/types';
+import { bindQueueSortable } from '../lib/queueSortable';
+import type { SearchItem, Song } from '../lib/types';
 
 const REACTIONS = ['👏', '👎'];
 
@@ -22,6 +22,13 @@ export default function Remote() {
   const [toast, setToast] = useState('');
   const toastTimer = useRef<number>();
   const queueOlRef = useRef<HTMLOListElement>(null);
+  // Freeze the rendered queue while dragging (refs — no re-render on drag start).
+  const draggingRef = useRef(false);
+  const frozenQueueRef = useRef<Song[] | null>(null);
+  const displayQueue =
+    draggingRef.current && frozenQueueRef.current
+      ? frozenQueueRef.current
+      : state.queue;
 
   // Ask for a nickname on first load.
   useEffect(() => { if (!name) promptName(); /* eslint-disable-next-line */ }, []);
@@ -95,21 +102,17 @@ export default function Remote() {
   // Drag-to-reorder (revert Sortable's DOM change; server broadcast is source of truth).
   useEffect(() => {
     if (!queueOlRef.current) return;
-    const s = Sortable.create(queueOlRef.current, {
-      animation: 150,
-      handle: '.meta',
-      onEnd: (evt) => {
-        const { oldIndex, newIndex, item, from } = evt;
-        if (oldIndex == null || newIndex == null || oldIndex === newIndex) return;
-        from.removeChild(item);
-        from.insertBefore(item, from.children[oldIndex] ?? null);
-        const q = stateRef.current.queue.slice();
-        const [moved] = q.splice(oldIndex, 1);
-        q.splice(newIndex, 0, moved);
-        socket.emit('reorderAll', { uids: q.map((x) => x.uid) });
+    return bindQueueSortable(queueOlRef.current, {
+      onDragStart: () => {
+        draggingRef.current = true;
+        frozenQueueRef.current = stateRef.current.queue.slice();
       },
+      onDragEnd: () => {
+        draggingRef.current = false;
+        frozenQueueRef.current = null;
+      },
+      onReorder: (uids) => socket.emit('reorderAll', { uids }),
     });
-    return () => s.destroy();
   }, []);
 
   const noSong = !state.current;
@@ -117,9 +120,23 @@ export default function Remote() {
   return (
     <>
       <header>
-        <span id="now">{state.current ? '🎵 ' + state.current.title : 'Nothing playing'}</span>
         <button id="name-btn" onClick={promptName}>👤 <span id="name">{name || 'set name'}</span></button>
       </header>
+
+      <section className="now-panel">
+        <div className="now-label">♪ Now playing</div>
+        {state.current ? (
+          <div className="now-playing">
+            <img src={state.current.thumb} alt="" />
+            <div className="meta">
+              <span className="t">{state.current.title}</span>
+              <span className="by">{state.current.addedBy || 'Guest'}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="now-empty">Nothing playing — add a song below</div>
+        )}
+      </section>
 
       <div className={'transport' + (noSong ? ' disabled' : '')} id="transport">
         <button id="r-restart" title="Restart song" disabled={noSong} onClick={() => socket.emit('restart')}>⏮ Restart</button>
@@ -127,7 +144,10 @@ export default function Remote() {
           onClick={() => socket.emit('togglePlay', { playing: !state.isPlaying })}>
           {state.isPlaying ? '⏸ Pause' : '▶ Play'}
         </button>
-        <button id="r-skip" title="Skip" disabled={noSong} onClick={() => socket.emit('skip')}>⏭ Skip</button>
+        <button id="r-skip" title="Skip" disabled={noSong}
+          onClick={() => state.current && socket.emit('skip', { uid: state.current.uid })}>
+          ⏭ Skip
+        </button>
       </div>
 
       <div className="search-bar">
@@ -166,10 +186,10 @@ export default function Remote() {
 
       <h2>Queue {state.queue.length ? <span id="count">({state.queue.length})</span> : null}</h2>
       <ol id="queue" className="queue" ref={queueOlRef}>
-        {state.queue.map((s, i) => (
+        {displayQueue.map((s, i) => (
           <li key={s.uid} data-uid={s.uid}>
             <span className="pos">{i + 1}</span>
-            <img src={s.thumb} alt="" />
+            <img src={s.thumb} alt="" draggable={false} />
             <div className="meta">
               <span className="t">{s.title}</span>
               <span className="by">{s.addedBy || ''}</span>
@@ -178,6 +198,9 @@ export default function Remote() {
               <button className="next" title="Play next" onClick={() => socket.emit('playNext', { uid: s.uid })}>⏫</button>
               <button className="rm" title="Remove" onClick={() => socket.emit('remove', { uid: s.uid })}>✕</button>
             </div>
+            <button type="button" className="drag-handle" aria-label="Hold and drag to reorder" title="Hold and drag to reorder">
+              <span className="drag-handle-icon" aria-hidden="true" />
+            </button>
           </li>
         ))}
       </ol>
